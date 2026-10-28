@@ -1,0 +1,2921 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>字陣 Prototype</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --ink: #20242a;
+      --muted: #6b7280;
+      --line: #26323d;
+      --panel: #fffdf7;
+      --main-field: #d8d7d2;
+      --sub-field: #d9e9f5;
+      --grave: #ebcee8;
+      --deck: #44a826;
+      --danger: #c2410c;
+      --blue: #1f8db6;
+      --blue-soft: #70cbea;
+      --purple: #965fd9;
+      --purple-soft: #d7a4ea;
+      --gold: #ed9d11;
+      --gold-soft: #f1d85d;
+    }
+
+    * { box-sizing: border-box; }
+
+    /* ============================================================
+       ソシャゲ風ラッパー画面（タイトル／ロビー／編成／図鑑／リザルト）
+       ============================================================ */
+    .screen-hidden { display: none !important; }
+
+    #titleScreen, #lobbyScreen, #formationScreen, #codexScreen, #resultScreen, #cardEnhanceScreen, #equipEnhanceScreen, #gachaScreen, #missionScreen, #shopScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- タイトル ---- */
+    #titleScreen {
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(237,157,17,.18), transparent 60%),
+        linear-gradient(160deg, #1b1e24, #2a2f38 55%, #1b1e24);
+      color: #f1d85d;
+      cursor: pointer;
+      text-align: center;
+    }
+    #titleScreen .title-logo {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-shadow: 0 0 24px rgba(241,216,93,.55), 0 4px 0 #000;
+      border: 3px solid #f1d85d;
+      padding: 28px 52px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.25);
+    }
+    #titleScreen .title-sub {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #d7c98a;
+      letter-spacing: .1em;
+    }
+    #titleScreen .title-tap {
+      margin-top: 46px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fffdf7;
+      animation: titleBlink 1.4s ease-in-out infinite;
+    }
+    @keyframes titleBlink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+    /* ---- 共通：トップバー（資源表示） ---- */
+    .top-resbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 16px;
+      background: #20242a;
+      color: #fffdf7;
+      border-bottom: 2px solid var(--gold);
+      flex: 0 0 auto;
+    }
+    .top-resbar .res-title {
+      font-weight: 900;
+      letter-spacing: .12em;
+      margin-right: auto;
+      font-size: 16px;
+      color: var(--gold-soft);
+    }
+    .top-resbar .res-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .top-resbar .back-btn {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fffdf7;
+      border-radius: 6px;
+      min-height: 30px;
+    }
+
+    /* ---- ロビー ---- */
+    #lobbyScreen {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(112,203,234,.15), transparent 55%),
+        var(--bg);
+    }
+    .lobby-main {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      min-height: 0;
+    }
+    .lobby-banner {
+      width: min(640px, 92%);
+      border: 2px solid var(--ink);
+      border-radius: 14px;
+      background: linear-gradient(160deg, #2a2f38, #1b1e24);
+      color: #f1d85d;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 10px 0 rgba(0,0,0,.08);
+    }
+    .lobby-banner .lobby-logo {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-shadow: 0 0 16px rgba(241,216,93,.5);
+    }
+    .lobby-banner .lobby-desc {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #d7c98a;
+      line-height: 1.7;
+    }
+    .lobby-nav {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      padding: 10px;
+      background: #fffdf7;
+      border-top: 2px solid var(--ink);
+    }
+    .lobby-nav button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 62px;
+      background: var(--panel);
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 2px;
+    }
+    .lobby-nav button .nav-icon { font-size: 20px; }
+    .lobby-nav button.primary-nav {
+      background: var(--gold);
+      color: #20242a;
+    }
+    @media (max-width: 720px) {
+      .lobby-nav { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ---- 編成・強化／図鑑 ---- */
+    #formationScreen, #codexScreen { background: var(--bg); }
+    .subscreen-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .owned-card-grid, .codex-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 10px;
+    }
+    .codex-section-divider {
+      grid-column: 1 / -1;
+      margin: 6px 0 2px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border, #444);
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .owned-card-cell, .codex-card-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid rgba(32,36,42,.12);
+      border-radius: 8px;
+      padding: 6px 4px 8px;
+      background: var(--panel);
+    }
+    .codex-card-cell.locked { opacity: .4; filter: grayscale(1); }
+    .codex-card-cell .locked-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* ---- リザルト ---- */
+    #resultScreen {
+      align-items: center;
+      justify-content: center;
+      background: rgba(20,22,26,.92);
+      color: #fffdf7;
+    }
+    .result-box {
+      width: min(420px, 90%);
+      border: 2px solid var(--gold);
+      border-radius: 14px;
+      background: #20242a;
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .result-box h2 {
+      margin: 0 0 4px;
+      letter-spacing: .1em;
+      color: var(--gold-soft);
+    }
+    .result-box .result-sub {
+      font-size: 12px;
+      color: #b9b2a0;
+      margin-bottom: 18px;
+    }
+    .result-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .result-stats .stat-cell {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 8px;
+      padding: 10px 6px;
+    }
+    .result-stats .stat-label { font-size: 11px; color: #d7c98a; }
+    .result-stats .stat-value { font-size: 20px; font-weight: 900; margin-top: 2px; }
+    .result-actions { display: flex; gap: 10px; justify-content: center; }
+    .result-actions button { min-height: 42px; padding: 0 18px; }
+    .result-actions .result-primary { background: var(--gold); border-color: var(--ink); }
+
+    /* ---- 準備中スタブモーダル ---- */
+    .stub-modal .modal-box { text-align: center; }
+    .stub-modal .stub-icon { font-size: 40px; margin-bottom: 8px; }
+
+    /* ---- 編成：ソート／Lv表示 ---- */
+    .formation-summary {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .formation-summary .fs-effect {
+      background: #20242a;
+      color: var(--gold-soft);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-weight: 700;
+    }
+    .formation-summary .fs-breakdown {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .formation-summary .fs-chip {
+      border: 1px solid rgba(32,36,42,.18);
+      border-radius: 8px;
+      padding: 4px 8px;
+      color: var(--muted);
+    }
+    .formation-summary .fs-chip.active {
+      border-color: var(--gold);
+      background: rgba(237,157,17,.12);
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .formation-summary .fs-rarity-breakdown { margin-bottom: 2px; }
+    .formation-summary .fs-chip.fs-rarity { font-weight: 700; }
+    .formation-summary .fs-chip.fs-rarity1 { border-color: var(--blue); color: var(--blue); }
+    .formation-summary .fs-chip.fs-rarity2 { border-color: var(--purple); color: var(--purple); }
+    .formation-summary .fs-chip.fs-rarity3 { border-color: var(--gold); color: #b8790c; background: rgba(237,157,17,.08); }
+    .formation-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .formation-toolbar .sort-label { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .owned-card-cell { position: relative; }
+    .owned-card-cell { cursor: pointer; }
+    .owned-card-cell:hover { background: rgba(31,141,182,.08); }
+    .owned-card-cell.in-formation { border-color: var(--gold); background: rgba(237,157,17,.08); }
+    .owned-card-cell .card-select-mark {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--muted);
+      background: #fff;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+    }
+    .owned-card-cell.in-formation .card-select-mark {
+      border-color: var(--gold);
+      background: var(--gold);
+      color: #20242a;
+    }
+    .owned-card-cell .card-lv-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: #20242a;
+      color: var(--gold-soft);
+      border-radius: 10px;
+      padding: 2px 8px;
+    }
+    .owned-card-cell .enhance-mini-btn {
+      font-size: 10px;
+      min-height: 22px;
+      padding: 0 8px;
+    }
+    .owned-card-cell .enhance-action-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .owned-card-cell .limit-break-available {
+      font-size: 10px;
+      line-height: 20px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 3px;
+      border-radius: 4px;
+      background: var(--gold-soft);
+      color: #20242a;
+      font-weight: 900;
+      text-align: center;
+    }
+    .codex-card-cell { cursor: default; }
+    .codex-card-cell:hover:not(.locked) { background: rgba(31,141,182,.08); }
+
+    /* ---- カード詳細モーダル ---- */
+    #cardDetailModal .modal-box { max-width: 380px; text-align: left; }
+    #cardDetailBody { font-size: 14px; line-height: 1.7; margin-top: 6px; }
+    #cardDetailBody .cd-type { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+
+    /* ---- 装備品システム ---- */
+    .card.equip-card { cursor: default; }
+    .card.equip-card.er1 { background: #dfe2e7; }   /* ☆1：薄いグレー */
+    .card.equip-card.er2 { background: #b6e070; }   /* ☆2：黄緑 */
+    .card.equip-card.er3 { background: #f7a9cb; }   /* ☆3：ピンク */
+    .card-name.equip-icon {
+      font-size: 46px;
+      letter-spacing: 0;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    }
+    .card.small .card-name.equip-icon { font-size: 30px; }
+    .card.equip-card .type-label.equip-cost { font-weight: 900; }
+    .equip-section {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 2px dashed rgba(32,36,42,.25);
+    }
+    .equip-section-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .equip-section-head .equip-title { font-size: 16px; font-weight: 900; }
+    .equip-cost-chip, .equip-exp-chip {
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 3px 12px;
+      border: 1.5px solid var(--purple);
+      color: var(--purple);
+      background: #fff;
+    }
+    .equip-cost-chip.full { border-color: var(--gold); color: #b8790c; background: rgba(237,157,17,.12); }
+    .equip-exp-chip { border-color: var(--blue); color: var(--blue); }
+    .equip-section-head button { margin-left: auto; }
+    .equip-empty { grid-column: 1 / -1; font-size: 13px; color: var(--muted); padding: 12px 4px; }
+    .owned-card-cell.equip-cell .equip-cell-name {
+      font-size: 10px;
+      font-weight: 700;
+      max-width: 92px;
+      text-align: center;
+      line-height: 1.25;
+      word-break: break-all;
+    }
+    .owned-card-cell.equip-cell.over-limit { opacity: .55; }
+    .equip-enhance-effect { max-width: 420px; text-align: center; font-size: 14px; line-height: 1.7; font-weight: 700; }
+    .equip-enhance-effect .equip-next { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .deck-ref-equip-title {
+      flex: 0 0 100%;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(32,36,42,.3);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .codex-card-cell .equip-cell-name { font-size: 10px; font-weight: 700; max-width: 92px; text-align: center; line-height: 1.25; word-break: break-all; }
+    .deck-ref-cell .equip-cell-name { font-size: 10px; font-weight: 700; max-width: 80px; text-align: center; }
+
+    /* ---- カード強化画面 ---- */
+    #cardEnhanceScreen, #equipEnhanceScreen { background: var(--bg); }
+    .enhance-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      gap: 18px;
+    }
+    .enhance-card-visual { transform: scale(1.6); margin: 20px 0; }
+    .enhance-lv-row {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--ink);
+    }
+    .enhance-exp-bar-wrap {
+      width: min(320px, 90%);
+      text-align: center;
+    }
+    .enhance-exp-bar {
+      height: 12px;
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      background: #e7e2d5;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .enhance-exp-bar-fill { height: 100%; background: var(--gold); }
+    .enhance-exp-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .enhance-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .enhance-actions button { min-height: 44px; padding: 0 20px; }
+    .enhance-actions .levelup-btn { background: var(--gold); }
+    .enhance-dupe-box {
+      border: 1px dashed var(--muted);
+      border-radius: 10px;
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .enhance-dupe-box .dupe-count { font-size: 16px; font-weight: 900; color: var(--ink); }
+    .enhance-dupe-row { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+    .enhance-dupe-row button { min-height: 38px; padding: 0 14px; font-size: 12px; }
+    .enhance-dupe-row button:disabled { opacity: .45; cursor: not-allowed; }
+    .enhance-desc { max-width: 420px; text-align: center; font-size: 13px; color: var(--ink); line-height: 1.7; }
+    .lb-tier-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(32,36,42,.1);
+      padding: 8px 2px;
+    }
+    .lb-tier-row .lb-tier-badge {
+      flex: 0 0 auto;
+      width: 46px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(32,36,42,.08);
+      color: var(--muted);
+    }
+    .lb-tier-row.achieved .lb-tier-badge { background: var(--gold); color: #2a2110; }
+    .lb-tier-row .lb-tier-desc { font-size: 13px; line-height: 1.6; color: var(--ink); }
+    .lb-tier-row.achieved .lb-tier-desc { font-weight: 700; }
+    .lb-tier-row.locked .lb-tier-desc { color: var(--muted); }
+    .ai-level-option, .ai-dupe-option {
+      text-align: left;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+    }
+    .ai-level-option.active, .ai-dupe-option.active {
+      background: var(--gold);
+      color: #2a2110;
+      font-weight: 900;
+    }
+
+    /* ---- ミッション画面 ---- */
+    #missionScreen { background: var(--bg); }
+    .mission-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px 0;
+      flex: 0 0 auto;
+    }
+    .mission-tab {
+      flex: 1 1 0;
+      background: var(--panel);
+      border: 1px solid var(--ink);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 4px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .mission-tab.active { background: var(--gold); color: #20242a; }
+    .mission-list { display: flex; flex-direction: column; gap: 10px; }
+    .mission-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(32,36,42,.15);
+      border-radius: 10px;
+      background: var(--panel);
+      padding: 12px 14px;
+    }
+    .mission-row.done { opacity: .55; }
+    .mission-row-main { flex: 1 1 auto; min-width: 0; }
+    .mission-row-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .mission-row-progress { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .mission-row-reward { font-size: 12px; color: var(--gold-soft-2, #a4740c); font-weight: 700; }
+    .mission-claim-btn {
+      flex: 0 0 auto;
+      min-height: 40px;
+      padding: 0 16px;
+      background: var(--gold);
+      border-color: #20242a;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .mission-claim-btn:disabled { background: #d8d3c4; color: var(--muted); }
+
+    /* ---- ガイド画面 ---- */
+    #guideScreen { background: var(--bg); }
+    .guide-body {
+      display: flex;
+      gap: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .guide-groups {
+      flex: 0 0 120px;
+      background: var(--panel);
+      border-right: 1px solid rgba(32,36,42,.15);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .guide-group-btn {
+      padding: 14px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      border: none;
+      border-bottom: 1px solid rgba(32,36,42,.1);
+      background: transparent;
+      color: var(--ink);
+      border-radius: 0;
+    }
+    .guide-group-btn.active {
+      background: var(--gold);
+      color: #20242a;
+    }
+    .guide-topics {
+      flex: 0 0 160px;
+      background: #f6f3ea;
+      border-right: 1px solid rgba(32,36,42,.15);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      gap: 4px;
+    }
+    .guide-topic-btn {
+      padding: 10px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      border-radius: 8px;
+    }
+    .guide-topic-btn.active {
+      background: #fff;
+      border-color: var(--gold);
+      color: #a4740c;
+      font-weight: 800;
+    }
+    .guide-content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+    .guide-content h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: var(--ink);
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 6px;
+    }
+    .guide-content .guide-body-text {
+      font-size: 14px;
+      line-height: 1.9;
+      color: var(--ink);
+      white-space: pre-line;
+      margin-bottom: 18px;
+    }
+    .guide-example-box {
+      background: var(--panel);
+      border: 1px dashed rgba(32,36,42,.25);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .guide-example-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .guide-example-cards {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .guide-field-diagram {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .guide-field-zone {
+      border: 1px solid rgba(32,36,42,.2);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      min-width: 150px;
+    }
+    .guide-field-zone-title { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+    .guide-field-zone-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+    .guide-beacon-groups { display: flex; flex-direction: column; gap: 16px; }
+    .guide-beacon-subgroup-title { font-size: 13px; font-weight: 800; color: #a4740c; margin-bottom: 8px; }
+    .guide-beacon-list { display: flex; flex-direction: column; gap: 6px; }
+    .guide-beacon-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid rgba(32,36,42,.12);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .guide-beacon-row .beacon-icon { font-size: 18px; flex: 0 0 auto; }
+    .guide-beacon-row .guide-status-icon { font-size: 18px; flex: 0 0 auto; }
+    .guide-beacon-row .guide-beacon-text { font-size: 13px; line-height: 1.5; }
+    .guide-beacon-row .guide-beacon-text b { color: var(--ink); }
+    .guide-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+    .guide-table th, .guide-table td {
+      border: 1px solid rgba(32,36,42,.15);
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .guide-table th { background: var(--panel); font-weight: 700; }
+
+    /* ---- ミッション達成トロフィー通知（PS5風） ---- */
+    #missionTrophyToast {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1200;
+      max-width: 320px;
+      background: linear-gradient(150deg, #20242a, #34394a);
+      color: #fffdf7;
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 12px 16px 12px 46px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 26px rgba(0,0,0,.35);
+      transform: translateX(-120%);
+      opacity: 0;
+      transition: transform .35s ease, opacity .35s ease;
+      pointer-events: none;
+    }
+    #missionTrophyToast::before {
+      content: "🏆";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
+    #missionTrophyToast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+
+    #gachaPullAnimScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      background: rgba(10,11,14,.92);
+      padding: 20px;
+    }
+    #gachaPullAnimScreen.active { display: flex; }
+    .gacha-pull-anim-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 96px);
+      grid-auto-rows: 134px;
+      gap: 14px;
+      justify-content: center;
+    }
+    .gacha-pull-card { width: 96px; height: 134px; perspective: 700px; }
+    .gacha-pull-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform .5s ease;
+      transform-style: preserve-3d;
+    }
+    .gacha-pull-card.flipped .gacha-pull-card-inner { transform: rotateY(180deg); }
+    .gacha-pull-card-back, .gacha-pull-card-front {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .gacha-pull-card-back {
+      background: linear-gradient(150deg, #8ec7e6, #4f9fc9);
+    }
+    .gacha-pull-card-back.r1 { background: linear-gradient(150deg, #a9d8ef, #5fa8cf); }
+    .gacha-pull-card-back.r2 { background: linear-gradient(150deg, #d3a9f0, #9a5fd0); }
+    .gacha-pull-card-back.r3 { background: linear-gradient(150deg, #f7d477, #e0982c); }
+    .gacha-pull-card-back.currency { background: linear-gradient(150deg, #b7bcc4, #6f7580); }
+    .gacha-pull-card-front {
+      transform: rotateY(180deg);
+      background: #fffdf7;
+      flex-direction: column;
+      padding: 4px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--ink);
+    }
+    .gacha-pull-currency-face {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-weight: 900;
+      font-size: 12px;
+      line-height: 1.4;
+      padding: 0 4px;
+    }
+    .gacha-dupe-badge {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      font-size: 9px;
+      background: rgba(32,36,42,.88);
+      color: #f1d85d;
+      padding: 3px 2px;
+      border-radius: 5px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    .gacha-dupe-badge.show { opacity: 1; transform: translateY(0); }
+    .gacha-pull-anim-footer { display: flex; gap: 14px; }
+    .gacha-pull-anim-footer button {
+      min-height: 44px;
+      padding: 0 22px;
+      background: var(--gold);
+      border-color: #20242a;
+      font-weight: 700;
+    }
+    .gacha-pull-anim-footer button:disabled {
+      opacity: .35;
+      cursor: default;
+    }
+
+
+    #gachaScreen { background: linear-gradient(160deg, #1b1e24, #2a2f38 60%, #1b1e24); color: #fffdf7; }
+    .gacha-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+    .gacha-banner-list {
+      flex: 0 0 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 8px;
+      background: rgba(0,0,0,.25);
+      border-right: 1px solid rgba(255,255,255,.12);
+    }
+    .gacha-banner-btn {
+      text-align: left;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.16);
+      color: #fffdf7;
+      border-radius: 8px;
+      padding: 10px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .gacha-banner-btn.active {
+      border-color: var(--gold);
+      background: rgba(237,157,17,.22);
+      color: var(--gold-soft);
+    }
+    .gacha-detail-panel {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 18px 20px 26px;
+    }
+    .gacha-detail-title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: var(--gold-soft);
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .gacha-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #d7c98a;
+      margin: 14px 0 6px;
+    }
+    .gacha-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+    }
+    .gacha-pull-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+    .gacha-pull-row button {
+      flex: 1 1 200px;
+      min-height: 48px;
+      background: var(--gold);
+      border-color: #20242a;
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .gacha-bottom-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .gacha-bottom-row button {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fffdf7;
+      min-height: 38px;
+    }
+    .gacha-counter-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 8px;
+      padding: 0 10px;
+      min-height: 38px;
+    }
+    .gacha-counter-label { font-size: 12px; color: #fffdf7; white-space: nowrap; }
+    .gacha-counter-box button {
+      background: var(--gold);
+      border-color: #20242a;
+      color: #20242a;
+      font-weight: 900;
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+    .gacha-counter-box button:disabled {
+      background: rgba(255,255,255,.15);
+      color: rgba(255,255,255,.4);
+      cursor: not-allowed;
+    }
+    .gacha-result-list, .gacha-prob-list {
+      max-height: 50vh;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .gacha-result-list .gr-row {
+      border-bottom: 1px solid rgba(32,36,42,.1);
+      padding: 6px 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gacha-result-list .gr-row.new { color: var(--good); font-weight: 700; }
+    .gacha-prob-list .gp-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(32,36,42,.1);
+      padding: 6px 2px;
+    }
+    .gacha-prob-list .gacha-prob-section-title {
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(32,36,42,.2);
+      padding-bottom: 3px;
+    }
+    .gacha-prob-list .gacha-prob-section-title:first-child { margin-top: 0; }
+
+    /* ---- ショップ画面 ---- */
+    #shopScreen { background: linear-gradient(160deg, #1b1e24, #2a2f38 60%, #1b1e24); color: #fffdf7; }
+    .shop-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+    .shop-tab-list {
+      flex: 0 0 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 8px;
+      background: rgba(0,0,0,.25);
+      border-right: 1px solid rgba(255,255,255,.12);
+    }
+    .shop-tab-btn {
+      text-align: left;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.16);
+      color: #fffdf7;
+      border-radius: 8px;
+      padding: 10px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .shop-tab-btn.active {
+      border-color: var(--gold);
+      background: rgba(237,157,17,.22);
+      color: var(--gold-soft);
+    }
+    .shop-item-panel {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 18px 20px 26px;
+    }
+    .shop-panel-title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: var(--gold-soft);
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .shop-item-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .shop-item-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .shop-item-cell {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      padding: 10px 8px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+    }
+    .shop-item-cell.sold-out { opacity: .45; }
+    .shop-item-visual {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .shop-item-currency-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: linear-gradient(150deg, #3a3f4a, #23262c);
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .shop-item-name { font-size: 12px; font-weight: 700; }
+    .shop-item-cost { font-size: 12px; color: #d7c98a; }
+    .shop-item-limit { font-size: 11px; color: var(--muted); }
+    .shop-item-note { font-size: 10px; color: var(--muted); }
+    .shop-item-qty-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .shop-item-qty-row button {
+      width: 26px;
+      height: 26px;
+      min-height: 0;
+      padding: 0;
+      font-weight: 900;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fffdf7;
+    }
+    .shop-item-qty-row input {
+      width: 40px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(0,0,0,.3);
+      color: #fffdf7;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+    .shop-item-buy-btn {
+      width: 100%;
+      margin-top: 4px;
+      background: var(--gold);
+      border-color: #20242a;
+      font-weight: 900;
+      font-size: 12px;
+      min-height: 34px;
+    }
+    .shop-item-buy-btn:disabled {
+      background: rgba(255,255,255,.15);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+
+    #debugCommandBar {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      background: rgba(20,22,26,.55);
+      padding-top: 14vh;
+    }
+    #debugCommandBar.active { display: flex; }
+    .debug-command-box {
+      width: min(480px, 92%);
+    }
+    #debugCommandInput {
+      width: 100%;
+      font-size: 16px;
+      padding: 12px 14px;
+      border: 2px solid var(--gold);
+      border-radius: 8px;
+      background: #20242a;
+      color: #fffdf7;
+      font-family: monospace;
+    }
+    #debugCommandInput:focus { outline: none; }
+    .debug-command-log {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #f1d85d;
+      background: rgba(0,0,0,.35);
+      border-radius: 6px;
+      padding: 8px 10px;
+      min-height: 18px;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(32,36,42,.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(32,36,42,.04) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px;
+      font-family: "Yu Gothic", "Meiryo", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button {
+      border: 1px solid #20242a;
+      background: #fffdf7;
+      color: var(--ink);
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .game {
+      min-height: 100vh;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) 260px;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .side-left,
+    .side-right,
+    .board,
+    .hand-panel,
+    .status-panel,
+    .log-panel {
+      min-width: 0;
+    }
+
+    .side-left,
+    .side-right {
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+    }
+
+    .board {
+      display: grid;
+      gap: 8px;
+      align-content: center;
+    }
+
+    /* 相手エリア（上）・自分エリア（下）の行 */
+    .player-row {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 0.75fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* フィールド縦列：相手サブ→相手メイン→(区切り)→自分メイン→自分サブ */
+    .field-stack {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .field-divider {
+      height: 2px;
+      background: var(--line);
+      border-radius: 2px;
+      margin: 2px 0;
+      opacity: 0.35;
+    }
+
+    .side-panel-col {
+      display: flex;
+      flex-direction: column;
+      align-self: stretch;
+      height: 100%;
+      min-width: 0;
+    }
+
+    .side-panel-spacer {
+      flex: 1;
+    }
+
+    .side-panel-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .side-panel-col .zone.synth {
+      min-height: 220px;
+    }
+
+    .element-panel-col {
+      display: flex;
+      flex-direction: column;
+      align-self: stretch;
+      height: 100%;
+      /* player-row が割り当てた右列の幅をそのまま使う。
+         固定幅だとステータス内の文言・エレメント名が折り返され、
+         パネル全体が縦長になってしまう。 */
+      width: 100%;
+      flex: 0 1 auto;
+      gap: 6px;
+      margin-left: 0;
+      margin-right: 0;
+    }
+    .element-zone {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+      padding: 8px 6px 9px;
+      min-height: 96px;
+    }
+    .element-gauge-wrap {
+      width: 100%;
+      margin-bottom: 0;
+    }
+    .element-gauge {
+      width: 100%;
+      height: 10px;
+      border-radius: 6px;
+      background: rgba(32,36,42,.12);
+      overflow: hidden;
+      border: 1px solid rgba(32,36,42,.2);
+    }
+    .element-gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff8a3d, var(--gold));
+      transition: width .3s ease;
+    }
+    .element-gauge-fill.maxed {
+      background: linear-gradient(90deg, #ff8a3d, #ffe14d, #ff8a3d);
+    }
+    .element-gauge-label {
+      font-size: 11px;
+      text-align: center;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .element-icons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      width: 100%;
+    }
+    .element-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border-radius: 8px;
+      border: 2px solid var(--line);
+      padding: 4px 2px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #fff;
+      cursor: not-allowed;
+      opacity: .55;
+      background: #999;
+      min-height: 46px;
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    }
+    .element-icon .element-icon-char { font-size: 16px; }
+    .element-icon.usable {
+      opacity: 1;
+      cursor: pointer;
+    }
+    .element-icon.usable:hover { transform: translateY(-2px); }
+    .element-icon.el-fire  { background: #e53935; }
+    .element-icon.el-water { background: #1e88e5; }
+    .element-icon.el-earth { background: #8d6e63; }
+    .element-icon.el-wind  { background: #43a047; }
+    .element-icon.el-enhanced-ready {
+      box-shadow: 0 0 10px 2px rgba(255,225,77,.9);
+    }
+    .element-icon.el-active {
+      filter: brightness(1.6) saturate(1.3);
+      box-shadow: 0 0 14px 4px rgba(255,255,255,.85);
+      animation: elementGlowPulse 1.1s ease-in-out infinite;
+    }
+    @keyframes elementGlowPulse {
+      0%, 100% { filter: brightness(1.6) saturate(1.3); }
+      50% { filter: brightness(2.1) saturate(1.6); }
+    }
+
+    .zone.coin {
+      background: linear-gradient(160deg, #fff7d6, #fffdf0);
+      flex-direction: column;
+      gap: 6px;
+      padding: 26px 10px 12px;
+      align-items: stretch;
+    }
+
+    .zone.coin.coin-hidden {
+      display: none !important;
+    }
+
+    .coin-count {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      color: #a67c00;
+    }
+
+    .coin-gauge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .coin-gauge-label { font-weight: 900; white-space: nowrap; }
+
+    .coin-gauge {
+      flex: 1;
+      height: 14px;
+      background: rgba(0,0,0,.08);
+      border-radius: 7px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,.15);
+    }
+
+    .coin-gauge-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd54a, #ff9d1f);
+      width: 0%;
+      transition: width .2s;
+    }
+
+    .coin-gauge-next { white-space: nowrap; font-size: 10px; color: #7a6a3a; }
+
+    .coin-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .coin-actions button, .coin-reroll-btn {
+      border: 2px solid #3a7d3a;
+      background: #eaffea;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 2px;
+      cursor: pointer;
+    }
+
+    .coin-actions button:disabled, .coin-reroll-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .coin-shop {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .coin-shop-slot {
+      border: 2px solid #b8862c;
+      border-radius: 6px;
+      background: #fff8e6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 4px 2px;
+      cursor: pointer;
+      font-size: 10px;
+    }
+
+    .coin-shop-slot:disabled, .coin-shop-slot.disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .coin-shop-price {
+      font-weight: 900;
+      color: #a67c00;
+    }
+
+    .coin-reroll-btn {
+      border-color: #555;
+      background: #f2f2f2;
+    }
+
+    .zone {
+      min-height: 118px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .zone.main { background: var(--main-field); }
+    .zone.sub { background: var(--sub-field); }
+    .zone.synth { background: linear-gradient(135deg, var(--main-field), var(--sub-field)); flex-direction: column; gap: 6px; padding-top: 26px; }
+    .zone.synth-hidden { display: none !important; }
+    .synth-mains {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      width: 100%;
+    }
+    .synth-material {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      width: 60%;
+      margin: 0 auto;
+    }
+    .synth-slot {
+      min-height: 88px;
+      border: 1px dashed rgba(32,36,42,.35);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: rgba(32,36,42,.45);
+    }
+    .synth-combined-wrap {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+    }
+    .synth-combined-wrap .card {
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(255, 190, 60, .55);
+    }
+    .zone.grave { background: var(--grave); min-height: 130px; }
+    .zone.deck { background: var(--deck); min-height: 180px; color: #fff; }
+
+    .zone.drop-ok {
+      outline: 4px solid rgba(31, 141, 182, .36);
+      outline-offset: 2px;
+    }
+
+    .zone-title {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      right: 10px;
+      color: rgba(32,36,42,.68);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .zone.deck .zone-title {
+      color: rgba(255,255,255,.85);
+    }
+
+    .pile-count {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .sub-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+      align-items: center;
+      min-height: 92px;
+    }
+
+    .slot {
+      min-height: 88px;
+      border: 1px dashed rgba(32,36,42,.35);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      background: rgba(255,255,255,.32);
+    }
+
+    .sub-replace .slot.filled {
+      outline: 3px solid rgba(194, 65, 12, .45);
+      cursor: pointer;
+    }
+
+    .hand-panel {
+      grid-column: 1 / 4;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .hand {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      justify-content: center;
+      min-height: 150px;
+      padding: 8px;
+    }
+
+    .opponent-hand {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      min-height: 110px;
+      align-items: center;
+    }
+
+    .card,
+    .card-back {
+      width: 86px;
+      height: 128px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(32,36,42,.14);
+      position: relative;
+      user-select: none;
+      flex: 0 0 auto;
+    }
+
+    .card {
+      background: var(--blue);
+      display: grid;
+      grid-template-rows: 20px minmax(0, 1fr) 24px auto;
+      padding: 8px;
+      color: #111827;
+      cursor: grab;
+    }
+
+    .card:active { cursor: grabbing; }
+    .card.disabled { opacity: .55; cursor: not-allowed; }
+    .card.small {
+      width: 62px;
+      height: 86px;
+      padding: 5px;
+      grid-template-rows: 16px minmax(0, 1fr) 18px auto;
+      box-shadow: 0 4px 10px rgba(32,36,42,.13);
+      cursor: default;
+    }
+
+    .card.r1.main-card { background: var(--blue); }
+    .card.r2.main-card { background: var(--purple); }
+    .card.r3.main-card { background: var(--gold); }
+    .card.r1.sub-card { background: var(--blue-soft); }
+    .card.r2.sub-card { background: var(--purple-soft); }
+    .card.r3.sub-card { background: var(--gold-soft); }
+
+    /* 完凸（凸Lv4）エフェクト：枠線が金色に輝く（対戦中のみ・控えめ） */
+    .card.lb-maxed {
+      border: 2px solid #f0c85f;
+      box-shadow: 0 0 3px 1px rgba(255,213,74,.5), 0 0 7px 2px rgba(255,170,0,.3), 0 8px 16px rgba(32,36,42,.14);
+      animation: lbMaxedGlow 2.6s ease-in-out infinite;
+    }
+    .card.lb-maxed.small {
+      box-shadow: 0 0 2px 1px rgba(255,213,74,.5), 0 0 5px 1px rgba(255,170,0,.3), 0 4px 10px rgba(32,36,42,.13);
+    }
+    @keyframes lbMaxedGlow {
+      0%, 100% { box-shadow: 0 0 3px 1px rgba(255,213,74,.4), 0 0 7px 2px rgba(255,170,0,.22), 0 8px 16px rgba(32,36,42,.14); border-color: #f0c85f; }
+      50% { box-shadow: 0 0 5px 2px rgba(255,229,130,.65), 0 0 11px 3px rgba(255,180,20,.4), 0 8px 16px rgba(32,36,42,.14); border-color: #ffe9a8; }
+    }
+
+    .card-name {
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.9);
+      border: 2px solid var(--line);
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 700;
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+    }
+
+    .card.small .card-name {
+      font-size: 28px;
+      border-width: 1px;
+    }
+
+    .card.small .beacon-row {
+      gap: 2px;
+      margin-top: 2px;
+      padding-top: 2px;
+    }
+    .card.small .beacon-icon {
+      width: 14px;
+      height: 14px;
+      font-size: 9px;
+    }
+
+    .card-name.multi-char {
+      font-size: 24px;
+      letter-spacing: -1px;
+    }
+
+    .card.small .card-name.multi-char {
+      font-size: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .rarity,
+    .type-label {
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      text-align: center;
+      color: rgba(17,24,39,.9);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .type-label.long-duration {
+      font-size: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .beacon-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 3px;
+      flex-wrap: wrap;
+      margin-top: 3px;
+      padding-top: 3px;
+      border-top: 1px dashed rgba(17,24,39,.18);
+    }
+    .beacon-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      line-height: 1;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background: #fff;
+      box-shadow: 0 0 0 1.5px rgba(17,24,39,.25) inset, 0 1px 2px rgba(0,0,0,.25);
+      cursor: default;
+    }
+    .beacon-icon.normal  { box-shadow: 0 0 0 1.5px #16a34a inset, 0 1px 2px rgba(0,0,0,.25); background: #ecfdf5; }
+    .beacon-icon.trouble { box-shadow: 0 0 0 1.5px #dc2626 inset, 0 1px 2px rgba(0,0,0,.25); background: #fef2f2; }
+    .beacon-icon.special { box-shadow: 0 0 0 1.5px #d97706 inset, 0 1px 2px rgba(0,0,0,.25); background: #fffbeb; }
+
+    .card-back {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.18) 25%, transparent 25%) 0 0 / 18px 18px,
+        #d71920;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .status-panel,
+    .log-panel,
+    .controls {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,253,247,.92);
+      padding: 10px;
+    }
+
+    .status-panel {
+      display: grid;
+      gap: 9px;
+      min-width: 0;
+      width: auto;
+      justify-self: center;
+      padding: 10px;
+    }
+
+    .player-status {
+      display: grid;
+      gap: 4px;
+      position: relative;
+    }
+
+    .dmg-float {
+      position: absolute;
+      right: 4px;
+      top: -4px;
+      color: #dc2626;
+      font-weight: 900;
+      font-size: 15px;
+      text-shadow: 0 1px 2px rgba(255,255,255,.9), 0 0 4px rgba(255,255,255,.7);
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      animation: dmgFloatUp 1.1s ease-out forwards;
+    }
+    .dmg-float.sub {
+      color: #ea580c;
+      font-size: 13px;
+      top: 14px;
+    }
+    .dmg-float.heal {
+      color: #84cc16;
+      top: 30px;
+    }
+    .dmg-float.ailment {
+      color: #be123c;
+      font-size: 12px;
+      right: 4px;
+    }
+    @keyframes dmgFloatUp {
+      0%   { opacity: 0; transform: translateY(4px) scale(0.9); }
+      15%  { opacity: 1; transform: translateY(-2px) scale(1.05); }
+      30%  { opacity: 1; transform: translateY(-10px) scale(1); }
+      100% { opacity: 0; transform: translateY(-32px) scale(1); }
+    }
+
+    .name-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-weight: 800;
+    }
+
+    .hpbar {
+      height: 14px;
+      border: 1px solid var(--line);
+      background: #e5e7eb;
+      overflow: hidden;
+      border-radius: 999px;
+    }
+
+    .hpfill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #16a34a, #eab308, #dc2626);
+      transform-origin: left;
+    }
+
+    .status-effects-row {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      min-height: 20px;
+    }
+    .status-badge {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      font-size: 14px;
+      background: var(--panel);
+      border: 1px solid rgba(32,36,42,.25);
+      border-radius: 6px;
+      cursor: default;
+    }
+    .status-badge .status-stack {
+      position: absolute;
+      right: -4px;
+      bottom: -4px;
+      font-size: 9px;
+      font-weight: 800;
+      background: #20242a;
+      color: #fff;
+      border-radius: 999px;
+      min-width: 13px;
+      height: 13px;
+      line-height: 13px;
+      text-align: center;
+      padding: 0 2px;
+    }
+
+    .turn-badge {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #20242a;
+      color: #fff;
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .controls {
+      display: grid;
+      gap: 8px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .log-panel {
+      min-height: 220px;
+      max-height: 36vh;
+      overflow: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 6px;
+    }
+
+    .log-entry {
+      padding: 7px 8px;
+      border-left: 4px solid #94a3b8;
+      background: rgba(255,255,255,.72);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .log-entry.strong { border-color: var(--danger); font-weight: 800; }
+    .log-entry.good { border-color: #16a34a; }
+
+    .tooltip {
+      position: fixed;
+      z-index: 2100;
+      width: 230px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf7;
+      box-shadow: 0 16px 36px rgba(32,36,42,.2);
+      padding: 10px;
+      pointer-events: none;
+      display: none;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .tooltip h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(32,36,42,.38);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-box {
+      width: min(720px, 100%);
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 24px 80px rgba(32,36,42,.28);
+    }
+
+    .modal-title {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .candidate-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      min-height: 150px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      color: rgba(32,36,42,.5);
+      font-weight: 800;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .winner {
+      position: fixed;
+      inset: auto 16px 16px 16px;
+      z-index: 40;
+      display: none;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf7;
+      padding: 14px;
+      box-shadow: 0 20px 60px rgba(32,36,42,.25);
+      text-align: center;
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .winner.active { display: block; }
+
+    /* ── デッキ選択画面 ── */
+    #deckSelectModal .modal-box {
+      max-width: 860px;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+
+    .deck-card.ui-only {
+      opacity: .7;
+    }
+
+    .deck-card-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      color: var(--muted);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .deck-select-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 14px 0;
+    }
+
+    .deck-select-col h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 6px;
+    }
+
+    .deck-list {
+      display: grid;
+      gap: 8px;
+      max-height: 52vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .deck-card {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      background: var(--panel);
+      transition: background .12s, border-color .12s;
+      position: relative;
+    }
+
+    .deck-card:hover { background: #f0ede4; }
+
+    .deck-card.selected {
+      border-color: var(--blue);
+      background: #e8f4fb;
+    }
+
+    .deck-card.unavailable {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .deck-card-name {
+      font-size: 17px;
+      font-weight: 900;
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+    }
+
+    .deck-card-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.45;
+    }
+
+    .deck-card-count {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .deck-card-effect {
+      font-size: 11px;
+      color: var(--blue);
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .deck-card.unavailable .deck-card-count {
+      color: var(--danger);
+    }
+
+    .deck-error {
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 700;
+      min-height: 18px;
+    }
+
+    /* ── カード選択モーダル（セレクトデッキ） ── */
+    #cardSelectModal .modal-box,
+    #deckRefModal .modal-box {
+      max-width: 920px;
+      width: min(920px, 96vw);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-select-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-select-search {
+      flex: 1 1 220px;
+      min-height: 36px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .card-select-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--panel);
+      user-select: none;
+    }
+
+    .filter-chip.active {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .card-select-counts {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.6);
+    }
+
+    .card-select-counts .over {
+      color: var(--danger);
+    }
+
+    .card-select-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      overflow-y: auto;
+      flex: 1;
+      padding: 4px 4px 12px;
+      align-content: start;
+    }
+
+    @media (max-width: 760px) {
+      .card-select-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .select-card-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      position: relative;
+    }
+
+    .select-card-cell:hover { background: rgba(31,141,182,.08); }
+
+    .select-card-cell .card.small {
+      cursor: pointer;
+    }
+
+    .select-card-count-badge {
+      position: absolute;
+      top: 2px;
+      right: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      border-radius: 999px;
+      min-width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      padding: 0 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+
+    .select-card-cell.maxed {
+      opacity: .45;
+    }
+
+    .card-select-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── デッキ参照（対戦中の自分のデッキ確認） ── */
+    .zone.deck-ref {
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+
+    .zone.deck-ref:hover {
+      background: rgba(31,141,182,.08);
+      border-color: var(--blue);
+    }
+
+    .deck-ref-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px;
+      border-radius: 8px;
+    }
+
+    /* ── サイコロパネル ── */
+    .dice-panel {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(160deg, #fff7e6, #fffdf7);
+      padding: 12px 10px;
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      text-align: center;
+      align-self: center;
+    }
+
+    .dice-panel.is-hidden {
+      visibility: hidden;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .dice-title {
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: 2px;
+    }
+
+    .dice-face {
+      width: 56px;
+      height: 56px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #fffdf7;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      transition: transform .15s;
+    }
+
+    .dice-face.rolling {
+      animation: diceShake .5s ease;
+    }
+
+    @keyframes diceShake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-15deg); }
+      50% { transform: rotate(10deg); }
+      75% { transform: rotate(-8deg); }
+    }
+
+    .dice-uses {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    #rollDiceBtn {
+      font-size: 12px;
+      min-height: 30px;
+      padding: 0 10px;
+    }
+
+    .dice-result {
+      font-size: 11px;
+      color: var(--ink);
+      font-weight: 700;
+      min-height: 16px;
+      line-height: 1.4;
+    }
+
+    /* ── メインフィールド スタック表示 ── */
+    .main-stack {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 92px;
+    }
+
+    /* 過去カード（視覚的残留）*/
+    .main-stack .card.ghost {
+      position: absolute;
+      opacity: 0.28;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* 重なって見えるように各カードをわずかにオフセット */
+    .main-stack .card.ghost:nth-child(1) { transform: translate(-8px, 4px) rotate(-4deg); }
+    .main-stack .card.ghost:nth-child(2) { transform: translate(-4px, 2px) rotate(-2deg); }
+    .main-stack .card.ghost:nth-child(3) { transform: translate(0px, 0px) rotate(0deg); }
+
+    /* 現在のカード（一番上） */
+    .main-stack .card.current {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* 墓地ドロップ強調 */
+    .zone.grave.drop-ok {
+      outline: 4px solid rgba(194, 65, 12, .5);
+      outline-offset: 2px;
+    }
+    .zone.grave.drop-ok .zone-title {
+      color: var(--danger);
+    }
+
+    @media (max-width: 980px) {
+      .game {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+
+      .side-left,
+      .side-right,
+      .hand-panel {
+        grid-column: 1;
+      }
+
+      .side-left,
+      .side-right {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hand-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- タイトル画面 -->
+  <div id="titleScreen">
+    <div class="title-logo">字陣</div>
+    <div class="title-sub">JI-JIN prototype</div>
+    <div class="title-tap">タップしてはじめる</div>
+  </div>
+
+  <!-- ロビー画面 -->
+  <div id="lobbyScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <div class="res-title">字陣</div>
+      <div class="res-item">💎 <span id="resStone">0</span></div>
+      <div class="res-item">EXP <span id="resExp">0</span></div>
+      <div class="res-item">🧩 <span id="resShard">0</span></div>
+    </div>
+    <div class="lobby-main">
+      <div class="lobby-banner">
+        <div class="lobby-logo">字陣</div>
+        <div class="lobby-desc">下のメニューから対戦や編成に進みましょう。</div>
+      </div>
+    </div>
+    <div class="lobby-nav">
+      <button id="navBattleBtn" class="primary-nav" type="button"><span class="nav-icon">⚔️</span>対戦</button>
+      <button id="navFormationBtn" type="button"><span class="nav-icon">🗂️</span>編成・強化</button>
+      <button id="navGachaBtn" type="button"><span class="nav-icon">🎰</span>ガチャ</button>
+      <button id="navCodexBtn" type="button"><span class="nav-icon">📖</span>図鑑</button>
+      <button id="navShopBtn" type="button"><span class="nav-icon">🛍️</span>ショップ</button>
+      <button id="navMissionBtn" type="button"><span class="nav-icon">🚩</span>ミッション</button>
+      <button id="navGuideBtn" type="button"><span class="nav-icon">📚</span>ガイド</button>
+    </div>
+  </div>
+
+  <!-- 編成・強化画面 -->
+  <div id="formationScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="formationBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">編成・強化</div>
+      <div class="res-item">編成 <span id="formationCount">30</span> / 30</div>
+      <div class="res-item">装備 <span id="formationEquipCost">0</span> / 20 C</div>
+    </div>
+    <div class="subscreen-body">
+      <div class="hint" style="margin-bottom:10px;">カードをクリックで編成に入れる／外す。「強化」ボタンでLv上げ画面へ。ホバーで詳細確認できます。</div>
+      <div class="formation-summary" id="formationSummary"></div>
+      <div class="formation-toolbar">
+        <span class="sort-label">並び替え：</span>
+        <span class="filter-chip" data-sort="rank">ランク順</span>
+        <span class="filter-chip" data-sort="acquired">入手順</span>
+        <span class="filter-chip" data-sort="deck">デッキ順</span>
+        <button id="formationResetBtn" type="button" style="margin-left:auto;">選択リセット</button>
+        <button id="formationRandomBtn" type="button">🎲 ランダム選択</button>
+      </div>
+      <div class="owned-card-grid" id="ownedCardGrid"></div>
+      <div class="equip-section" id="equipSection">
+        <div class="equip-section-head">
+          <span class="equip-title">🎒 装備品</span>
+          <span class="equip-cost-chip" id="equipCostChip">制限コスト 0 / 20 C</span>
+          <span class="equip-exp-chip" id="equipExpChip">装備の獲得経験値ボーナス +0%</span>
+          <button id="equipResetBtn" type="button">装備リセット</button>
+        </div>
+        <div class="hint" style="margin-bottom:10px;">装備品をクリックで装備する／外す（合計20Cまで）。「強化」ボタンでLv上げ画面へ。対戦中はデッキ参照から確認できます。</div>
+        <div class="owned-card-grid" id="ownedEquipGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カード強化画面 -->
+  <div id="cardEnhanceScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="enhanceBackBtn" type="button">← 編成へ</button>
+      <div class="res-title" id="enhanceCardName">カード強化</div>
+      <div class="res-item">EXP <span id="enhanceResExp">0</span></div>
+    </div>
+    <div class="enhance-body">
+      <div class="enhance-card-visual" id="enhanceCardVisual"></div>
+      <div class="enhance-lv-row">Lv.<span id="enhanceLevel">1</span> / 20</div>
+      <div class="enhance-exp-note" id="enhanceHpNote" style="font-size:12px; color: var(--muted);"></div>
+      <div class="enhance-exp-bar-wrap">
+        <div class="enhance-exp-note" id="enhanceExpNote">次のLvまで必要EXP：200</div>
+        <div class="enhance-exp-bar"><div class="enhance-exp-bar-fill" id="enhanceExpBarFill" style="width:0%;"></div></div>
+      </div>
+      <div class="enhance-actions">
+        <button class="levelup-btn" id="enhanceLevelUpBtn" type="button">EXPを消費してレベルアップ</button>
+        <button id="enhanceFormationToggleBtn" type="button">編成に入れる</button>
+      </div>
+      <div class="enhance-dupe-box">
+        <div>凸Lv <span class="dupe-count" id="enhanceLimitBreakLevel">0</span> / 4　字魂 <span class="dupe-count" id="enhanceDupeCount">0</span></div>
+        <div style="margin:6px 0;" id="enhanceDupeNote">重複カードで手に入る「字魂」を消費してカードを凸強化できます。</div>
+        <div class="enhance-dupe-row">
+          <button id="enhanceDupeBtn" type="button">凸する</button>
+          <button id="enhanceProbBtn" type="button">凸性能確認</button>
+        </div>
+      </div>
+      <div class="enhance-desc" id="enhanceCardDesc"></div>
+    </div>
+  </div>
+
+  <!-- 凸性能確認モーダル -->
+  <!-- 装備強化画面 -->
+  <div id="equipEnhanceScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="equipEnhanceBackBtn" type="button">← 編成へ</button>
+      <div class="res-title" id="equipEnhanceName">装備強化</div>
+      <div class="res-item">EXP <span id="equipEnhanceResExp">0</span></div>
+    </div>
+    <div class="enhance-body">
+      <div class="enhance-card-visual" id="equipEnhanceVisual"></div>
+      <div class="enhance-lv-row">Lv.<span id="equipEnhanceLevel">1</span> / <span id="equipEnhanceMaxLevel">10</span>　<span style="font-size:13px;">重複 ＋<span id="equipEnhanceDupe">0</span> / <span id="equipEnhanceDupeCap">20</span></span></div>
+      <div class="equip-enhance-effect" id="equipEnhanceEffect"></div>
+      <div class="enhance-exp-note" id="equipEnhanceExpBonus" style="font-size:12px; color: var(--muted);"></div>
+      <div class="enhance-exp-bar-wrap">
+        <div class="enhance-exp-note" id="equipEnhanceExpNote">次のLvまで必要EXP：300</div>
+        <div class="enhance-exp-bar"><div class="enhance-exp-bar-fill" id="equipEnhanceExpBarFill" style="width:0%;"></div></div>
+      </div>
+      <div class="enhance-actions">
+        <button class="levelup-btn" id="equipEnhanceLevelUpBtn" type="button">EXPを消費してレベルアップ</button>
+        <button id="equipEnhanceToggleBtn" type="button">装備する</button>
+      </div>
+      <div class="enhance-dupe-box">
+        <div>この装備のコスト <span class="dupe-count" id="equipEnhanceCost">0</span> C</div>
+        <div style="margin:6px 0;" id="equipEnhanceCostNote"></div>
+        <div>ガチャで同じ装備品を引くとLvが＋1されます（強化Lvとは別枠・最大＋20）。上がるのは獲得経験値+1%の基礎効果のみです。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="limitBreakModal">
+    <div class="modal-box">
+      <h2 class="modal-title" id="limitBreakModalTitle">凸性能</h2>
+      <div class="gacha-prob-list" id="limitBreakList"></div>
+      <div class="modal-actions"><button id="limitBreakCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- ミッション画面 -->
+  <div id="missionScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="missionBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">ミッション</div>
+      <button id="missionClaimAllBtn" type="button">一括受け取り</button>
+    </div>
+    <div class="mission-tabs" id="missionTabs">
+      <button class="mission-tab active" data-cat="battle" type="button">対戦</button>
+      <button class="mission-tab" data-cat="enhance" type="button">強化</button>
+      <button class="mission-tab" data-cat="gacha" type="button">ガチャ</button>
+      <button class="mission-tab" data-cat="other" type="button">その他</button>
+    </div>
+    <div class="subscreen-body">
+      <div class="mission-list" id="missionList"></div>
+    </div>
+  </div>
+
+  <!-- ミッション達成トロフィー通知 -->
+  <div id="missionTrophyToast"></div>
+
+  <!-- ガイド画面 -->
+  <div id="guideScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="guideBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">ガイド</div>
+    </div>
+    <div class="guide-body">
+      <div class="guide-groups" id="guideGroups"></div>
+      <div class="guide-topics" id="guideTopics"></div>
+      <div class="guide-content" id="guideContent"></div>
+    </div>
+  </div>
+
+  <!-- 図鑑・カード詳細画面 -->
+  <div id="codexScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="codexBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">図鑑</div>
+    </div>
+    <div class="subscreen-body">
+      <div class="hint" style="margin-bottom:10px;">カードにカーソルを合わせると詳細を確認できます。</div>
+      <div class="card-select-header">
+        <input type="text" id="codexSearchInput" class="card-select-search" placeholder="カード名・効果テキストで検索…">
+        <div class="card-select-filters" id="codexFilters">
+          <span class="filter-chip active" data-rarity="all">すべて</span>
+          <span class="filter-chip" data-rarity="1">☆1</span>
+          <span class="filter-chip" data-rarity="2">☆2</span>
+          <span class="filter-chip" data-rarity="3">☆3</span>
+          <span class="filter-chip" data-type="main">メイン</span>
+          <span class="filter-chip" data-type="sub">サブ</span>
+        </div>
+      </div>
+      <div class="card-select-counts" id="codexCounts"></div>
+      <div class="codex-card-grid" id="codexCardGrid"></div>
+    </div>
+  </div>
+
+  <!-- リザルト画面 -->
+  <div id="resultScreen" class="screen-hidden">
+    <div class="result-box">
+      <h2 id="resultTitle">勝利！</h2>
+      <div class="result-sub" id="resultSub"></div>
+      <div class="result-stats">
+        <div class="stat-cell"><div class="stat-label">獲得EXP</div><div class="stat-value" id="resultExp">0</div></div>
+        <div class="stat-cell"><div class="stat-label">経過ターン</div><div class="stat-value" id="resultTurns">0</div></div>
+        <div class="stat-cell" style="grid-column: 1 / -1;"><div class="stat-label">最大ダメージ</div><div class="stat-value" id="resultMaxDamage">0</div></div>
+      </div>
+      <div class="result-actions">
+        <button id="resultLobbyBtn" type="button">ロビーへ戻る</button>
+        <button id="resultRetryBtn" class="result-primary" type="button">もう一度対戦</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ショップ準備中モーダル -->
+  <div class="modal stub-modal" id="shopStubModal">
+    <div class="modal-box">
+      <div class="stub-icon">🛍️</div>
+      <h2 class="modal-title">ショップ</h2>
+      <p class="hint">ショップ画面は準備中です。近日実装予定！</p>
+      <div class="modal-actions"><button id="shopStubCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- ミッション準備中モーダル -->
+  <div class="modal stub-modal" id="missionStubModal">
+    <div class="modal-box">
+      <div class="stub-icon">🚩</div>
+      <h2 class="modal-title">ミッション</h2>
+      <p class="hint">ミッション一覧は準備中です。近日実装予定！</p>
+      <div class="modal-actions"><button id="missionStubCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- ガチャ画面 -->
+  <div id="gachaScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="gachaBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">ガチャ</div>
+      <div class="res-item">💎 <span id="gachaResStone">0</span></div>
+    </div>
+    <div class="gacha-body">
+      <div class="gacha-banner-list" id="gachaBannerList"></div>
+      <div class="gacha-detail-panel">
+        <div class="gacha-detail-title" id="gachaBannerTitle">スタンダード</div>
+        <div class="gacha-section-label">☆3 ラインナップ</div>
+        <div class="gacha-card-grid gacha-r3" id="gachaRarity3Grid"></div>
+        <div class="gacha-section-label">☆1〜2 ピックアップ（入場ごとに変化）</div>
+        <div class="gacha-card-grid gacha-r2" id="gachaRarity2Grid"></div>
+        <div class="gacha-pull-row">
+          <button id="gachaPull1Btn" type="button">💎 120で1回引く</button>
+          <button id="gachaPull10Btn" type="button">💎 1200で10回引く</button>
+        </div>
+        <div class="gacha-bottom-row">
+          <button id="gachaProbBtn" type="button">確率詳細</button>
+          <button id="gachaShopBtn" type="button">🛍️ ショップへ</button>
+          <div class="gacha-counter-box" id="gachaCounterBox">
+            <span class="gacha-counter-label">カウンター <span id="gachaCounterValue">0</span>/100</span>
+            <button id="gachaCounterClaimBtn" type="button">☆3カード確定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ガチャ排出演出（カードめくり） -->
+  <div id="gachaPullAnimScreen">
+    <div class="gacha-pull-anim-grid" id="gachaPullAnimGrid"></div>
+    <div class="gacha-pull-anim-footer">
+      <button id="gachaPullAnimSkipBtn" type="button">スキップ</button>
+      <button id="gachaPullAnimCloseBtn" type="button" disabled>閉じる</button>
+    </div>
+  </div>
+
+  <!-- 排出確率モーダル -->
+  <div class="modal" id="gachaProbModal">
+    <div class="modal-box">
+      <h2 class="modal-title">排出確率</h2>
+      <div class="gacha-prob-list" id="gachaProbList"></div>
+      <div class="modal-actions"><button id="gachaProbCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- ショップ画面 -->
+  <div id="shopScreen" class="screen-hidden">
+    <div class="top-resbar">
+      <button class="back-btn" id="shopBackBtn" type="button">← ロビーへ</button>
+      <div class="res-title">ショップ</div>
+      <div class="res-item">💎 <span id="shopResStone">0</span></div>
+      <div class="res-item">✨ <span id="shopResExp">0</span></div>
+      <div class="res-item">🧩 <span id="shopResShard">0</span></div>
+    </div>
+    <div class="shop-body">
+      <div class="shop-tab-list" id="shopTabList"></div>
+      <div class="shop-item-panel">
+        <div class="shop-panel-title" id="shopTabTitle"></div>
+        <div class="shop-item-grid" id="shopItemGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カード詳細モーダル（図鑑クリック時） -->
+  <div class="modal" id="cardDetailModal">
+    <div class="modal-box">
+      <h2 class="modal-title" id="cardDetailTitle"></h2>
+      <div id="cardDetailBody"></div>
+      <div class="modal-actions"><button id="cardDetailCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- デバッグコマンドバー（ロビーで@キー） -->
+  <div id="debugCommandBar">
+    <div class="debug-command-box">
+      <input type="text" id="debugCommandInput" placeholder="/energy 1000 ／ /gatya 1000 ／ /shard 1000 ／ /allcards" autocomplete="off">
+      <div class="debug-command-log" id="debugCommandLog"></div>
+    </div>
+  </div>
+
+  <main class="game screen-hidden" id="game">
+    <aside class="side-left">
+      <section class="zone deck" id="aiDeck"><div class="zone-title">相手山札</div><div class="pile-count"></div></section>
+      <section class="zone deck-ref" id="deckRefBtn"><div class="zone-title">デッキ参照</div><div class="pile-count">30枚</div></section>
+      <section class="zone grave" id="playerGrave"><div class="zone-title">自分墓地</div><div class="pile-count"></div></section>
+    </aside>
+
+    <section class="board">
+      <!-- 相手手札（裏向き） -->
+      <div class="opponent-hand" id="aiHand"></div>
+
+      <div class="player-row">
+        <!-- 左：相手合成スペース（上）／サイコロパネル・自分合成スペース（下） -->
+        <div class="side-panel-col">
+          <!-- 相手合成スペース（シンセサイズデッキ選択時のみ表示） -->
+          <section class="zone synth synth-hidden" id="aiSynthZone">
+            <div class="zone-title">相手合成スペース</div>
+            <div class="synth-mains" id="aiSynthMains"></div>
+            <div class="synth-material" id="aiSynthMaterial"></div>
+          </section>
+          <!-- 相手コインスペース（コインデッキ選択時のみ表示） -->
+          <section class="zone coin coin-hidden" id="aiCoinZone">
+            <div class="zone-title">相手コインスペース</div>
+            <div class="coin-count" id="aiCoinCount">💰 0</div>
+          </section>
+          <div class="side-panel-spacer"></div>
+          <div class="side-panel-bottom">
+            <!-- サイコロパネル（トリックデッキ選択時のみ表示） -->
+            <section class="dice-panel is-hidden" id="dicePanel">
+              <div class="dice-title">サイコロ</div>
+              <div class="dice-face" id="diceFace">🎲</div>
+              <div class="dice-uses" id="diceUses">残り 6/6</div>
+              <button id="rollDiceBtn">サイコロを振る</button>
+              <div class="dice-result" id="diceResult"></div>
+            </section>
+            <!-- 自分合成スペース（シンセサイズデッキ選択時のみ表示） -->
+            <section class="zone synth synth-hidden" id="playerSynthZone">
+              <div class="zone-title">自分合成スペース</div>
+              <div class="synth-mains" id="playerSynthMains"></div>
+              <div class="synth-material" id="playerSynthMaterial"></div>
+            </section>
+            <!-- 自分コインスペース（コインデッキ選択時のみ表示） -->
+            <section class="zone coin coin-hidden" id="playerCoinZone">
+              <div class="zone-title">自分コインスペース</div>
+              <div class="coin-count" id="playerCoinCount">💰 0</div>
+              <div class="coin-gauge-wrap">
+                <div class="coin-gauge-label">Lv.<span id="coinLevel">1</span></div>
+                <div class="coin-gauge" id="coinGauge"><div class="coin-gauge-fill" id="coinGaugeFill"></div></div>
+                <div class="coin-gauge-next" id="coinGaugeNext"></div>
+              </div>
+              <div class="coin-actions">
+                <button class="coin-heal-btn" id="coinHealBtn">回復<br><small>30枚</small></button>
+                <button class="coin-buff-btn" id="coinBuffBtn">強化<br><small>50枚</small></button>
+              </div>
+              <div class="coin-shop" id="coinShop"></div>
+              <button class="coin-reroll-btn" id="coinRerollBtn">更新(2) <span id="coinRerollLeft">3/3</span></button>
+            </section>
+          </div>
+        </div>
+        <!-- 中央：フィールド縦並び（相手サブ→相手メイン→区切り→自分メイン→自分サブ） -->
+        <div class="field-stack">
+          <!-- 相手サブフィールド -->
+          <section class="zone sub">
+            <div class="zone-title">相手サブフィールド</div>
+            <div class="sub-slots" id="aiSubs"></div>
+          </section>
+          <!-- 相手メインフィールド -->
+          <section class="zone main" id="aiMain">
+            <div class="zone-title">相手メインフィールド</div>
+            <div class="empty">待機中</div>
+          </section>
+
+          <div class="field-divider"></div>
+
+          <!-- 自分メインフィールド -->
+          <section class="zone main" id="playerMainDrop">
+            <div class="zone-title">自分メインフィールド</div>
+            <div class="empty">メインカードをドロップ</div>
+          </section>
+          <!-- 自分サブフィールド -->
+          <section class="zone sub" id="playerSubDrop">
+            <div class="zone-title">自分サブフィールド</div>
+            <div class="sub-slots" id="playerSubs"></div>
+          </section>
+        </div>
+
+        <!-- 右側：エレメント（上）→ステータス→エレメント（下） -->
+        <div class="element-panel-col">
+          <section class="zone element-zone" id="aiElementZone">
+            <div class="zone-title">エレメントゲージ</div>
+            <div class="element-gauge-wrap">
+              <div class="element-gauge"><div class="element-gauge-fill" id="aiElementGaugeFill"></div></div>
+              <div class="element-gauge-label"><span id="aiElementCostText">0</span>/50</div>
+            </div>
+            <div class="element-icons" id="aiElementIcons"></div>
+          </section>
+
+          <section class="status-panel">
+            <div class="turn-badge" id="turnBadge">準備中</div>
+            <div class="player-status" id="aiStatusBox">
+              <div class="name-line"><span>相手</span><span id="aiHpText">20000</span></div>
+              <div class="hpbar"><div class="hpfill" id="aiHpFill"></div></div>
+              <div class="status-effects-row" id="aiStatusRow"></div>
+            </div>
+            <div class="player-status" id="playerStatusBox">
+              <div class="name-line"><span>自分</span><span id="playerHpText">20000</span></div>
+              <div class="hpbar"><div class="hpfill" id="playerHpFill"></div></div>
+              <div class="status-effects-row" id="playerStatusRow"></div>
+            </div>
+            <div class="hint" id="actionHint">カードを選んでください。</div>
+          </section>
+
+          <section class="zone element-zone" id="playerElementZone">
+            <div class="zone-title">エレメントゲージ</div>
+            <div class="element-gauge-wrap">
+              <div class="element-gauge"><div class="element-gauge-fill" id="playerElementGaugeFill"></div></div>
+              <div class="element-gauge-label"><span id="playerElementCostText">0</span>/50</div>
+            </div>
+            <div class="element-icons" id="playerElementIcons"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-right">
+      <section class="zone grave" id="aiGrave"><div class="zone-title">相手墓地</div><div class="pile-count"></div></section>
+      <section class="zone deck" id="playerDeck"><div class="zone-title">自分山札</div><div class="pile-count"></div></section>
+      <section class="log-panel" id="logPanel"></section>
+    </aside>
+
+    <section class="hand-panel">
+      <div></div>
+      <div class="hand" id="playerHand"></div>
+      <section class="controls">
+        <button id="endTurnBtn" disabled>ターン終了</button>
+        <button id="restartBtn">リスタート</button>
+        <button id="backToLobbyBtn" type="button">ロビーへ戻る</button>
+        <div class="hint">いつでもターン終了できます。メインを出さずに終了すると、山札から1枚ドローします。</div>
+      </section>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <!-- デッキ選択モーダル -->
+  <div class="modal" id="deckSelectModal">
+    <div class="modal-box">
+      <h2 class="modal-title">デッキ選択</h2>
+      <div class="deck-select-grid" style="grid-template-columns: 1fr;">
+        <div class="deck-select-col">
+          <h3>自分のデッキ（編成・強化で組んだ構成）</h3>
+          <div class="deck-list" id="playerFormationSummary"></div>
+        </div>
+        <div class="deck-select-col">
+          <h3>相手のデッキ</h3>
+          <div class="deck-list" id="aiDeckList"></div>
+        </div>
+      </div>
+      <div class="deck-error" id="deckError"></div>
+      <div class="modal-actions">
+        <button id="aiLevelAdjustBtn" type="button">レベル調整：<span id="aiLevelAdjustLabel">無</span></button>
+        <button id="aiDupeAdjustBtn" type="button">重複調整：<span id="aiDupeAdjustLabel">0</span></button>
+        <button id="deckConfirmBtn">ゲームを始める</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 相手デッキ：レベル調整モーダル -->
+  <div class="modal" id="aiLevelModal">
+    <div class="modal-box">
+      <h2 class="modal-title">相手デッキのレベル調整</h2>
+      <div class="enhance-desc" style="margin-bottom:10px;">相手が使うカードのレベル（HPボーナス）を調整します。「弱」「中」はカードごとに範囲内でランダムなレベルになります。</div>
+      <div class="enhance-dupe-row" style="flex-direction:column; align-items:stretch;">
+        <button type="button" class="ai-level-option" data-mode="none">無　（Lv1固定・未強化）</button>
+        <button type="button" class="ai-level-option" data-mode="weak">弱　（Lv2〜10・カードごとにランダム）</button>
+        <button type="button" class="ai-level-option" data-mode="mid">中　（Lv11〜20・カードごとにランダム）</button>
+        <button type="button" class="ai-level-option" data-mode="strong">強　（Lv20固定）</button>
+      </div>
+      <div class="modal-actions"><button id="aiLevelModalCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- 相手デッキ：重複調整モーダル -->
+  <div class="modal" id="aiDupeModal">
+    <div class="modal-box">
+      <h2 class="modal-title">相手デッキの重複調整</h2>
+      <div class="enhance-desc" style="margin-bottom:10px;">相手が使う全てのカードの凸（重複）レベルを一律で調整します。</div>
+      <div class="enhance-dupe-row" style="flex-direction:column; align-items:stretch;">
+        <button type="button" class="ai-dupe-option" data-level="0">0凸（未強化）</button>
+        <button type="button" class="ai-dupe-option" data-level="1">1凸</button>
+        <button type="button" class="ai-dupe-option" data-level="2">2凸</button>
+        <button type="button" class="ai-dupe-option" data-level="3">3凸</button>
+        <button type="button" class="ai-dupe-option" data-level="4">4凸（完凸）</button>
+      </div>
+      <div class="modal-actions"><button id="aiDupeModalCloseBtn" type="button">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- カード選択モーダル（セレクトデッキ） -->
+  <div class="modal" id="cardSelectModal">
+    <div class="modal-box">
+      <h2 class="modal-title">セレクトデッキ：カードを30枚選ぶ</h2>
+      <div class="card-select-header">
+        <input type="text" id="cardSearchInput" class="card-select-search" placeholder="カード名・効果テキストで検索…">
+        <div class="card-select-filters" id="cardSelectFilters">
+          <span class="filter-chip active" data-rarity="all">すべて</span>
+          <span class="filter-chip" data-rarity="1">☆1</span>
+          <span class="filter-chip" data-rarity="2">☆2</span>
+          <span class="filter-chip" data-rarity="3">☆3</span>
+          <span class="filter-chip" data-type="main">メイン</span>
+          <span class="filter-chip" data-type="sub">サブ</span>
+        </div>
+      </div>
+      <div class="card-select-counts" id="cardSelectCounts"></div>
+      <div class="card-select-grid" id="cardSelectGrid"></div>
+      <div class="card-select-footer">
+        <div class="hint" id="cardSelectHint">カードをクリックして選択・解除できます。</div>
+        <div style="display:flex; gap:8px;">
+          <button id="cardSelectCancelBtn" type="button">デッキ選択に戻る</button>
+          <button id="cardSelectConfirmBtn" type="button" disabled>このデッキで決定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- デッキ参照モーダル（対戦中、自分のデッキ30枚を一覧表示） -->
+  <div class="modal" id="deckRefModal">
+    <div class="modal-box">
+      <h2 class="modal-title">デッキ参照（自分の30枚）</h2>
+      <div class="card-select-counts" id="deckRefCounts"></div>
+      <div class="card-select-grid" id="deckRefGrid"></div>
+      <div class="card-select-footer">
+        <div class="hint">カードにカーソルを合わせると効果を確認できます。</div>
+        <div style="display:flex; gap:8px;">
+          <button id="deckRefCloseBtn" type="button">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="drawModal">
+    <div class="modal-box">
+      <h2 class="modal-title" id="drawTitle">初期手札</h2>
+      <div class="hint" id="drawText">山札から3枚を引きます。最初だけ1回引き直せます。</div>
+      <div class="candidate-row" id="candidateRow"></div>
+      <div class="modal-actions">
+        <button id="redrawBtn">引き直す</button>
+        <button id="acceptDrawBtn">この3枚で開始</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="winner" id="winner"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/equipment.js"></script>
+  <script src="js/battle-ui.js"></script>
+  <script src="js/card-effects.js"></script>
+  <script src="js/battle-flow.js"></script>
+  <script src="js/lobby.js"></script>
+</body>
+</html>
