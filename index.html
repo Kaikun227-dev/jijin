@@ -2341,6 +2341,303 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media (max-width: 760px) {
+      #game:not(.screen-hidden) {
+        position: fixed;
+        inset: 0;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+        padding: 4px;
+        gap: 4px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: 38px minmax(0, 1fr) auto;
+      }
+
+      .side-left,
+      .side-right {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 3px;
+        min-height: 0;
+      }
+
+      .side-left { grid-column: 1; grid-row: 1; }
+      .side-right { grid-column: 2; grid-row: 1; }
+
+      .side-left #deckRefBtn { grid-column: 1; grid-row: 1; }
+      .side-left #aiDeck { grid-column: 2; grid-row: 1; }
+      .side-left #playerGrave { grid-column: 3; grid-row: 1; }
+
+      .side-left > .zone,
+      .side-right > .zone,
+      .side-right > .log-panel {
+        min-height: 0;
+        max-height: none;
+        padding: 12px 2px 2px;
+        border-width: 1px;
+        border-radius: 5px;
+        font-size: 10px;
+      }
+
+      .side-left .zone-title,
+      .side-right .zone-title {
+        top: 2px;
+        left: 1px;
+        right: 1px;
+        font-size: 8px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .side-left .pile-count,
+      .side-right .pile-count {
+        font-size: 11px;
+      }
+
+      .side-right .log-panel {
+        overflow: auto;
+        gap: 2px;
+      }
+
+      .side-right .log-entry {
+        padding: 2px;
+        border-left-width: 2px;
+        font-size: 8px;
+        line-height: 1.15;
+      }
+
+      .board {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-height: 0;
+        gap: 2px;
+        align-content: stretch;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .opponent-hand {
+        min-height: 0;
+        height: 30px;
+        gap: 4px;
+      }
+
+      .opponent-hand .card-back {
+        width: 18px;
+        height: 26px;
+        border-width: 1px;
+        border-radius: 3px;
+      }
+
+      .player-row {
+        min-height: 0;
+        align-items: stretch;
+        grid-template-columns: minmax(0, .6fr) minmax(0, 2.4fr) minmax(0, 1fr);
+        gap: 3px;
+      }
+
+      .side-panel-col,
+      .element-panel-col {
+        min-height: 0;
+        gap: 3px;
+      }
+
+      .side-panel-spacer { display: none; }
+      .side-panel-bottom { gap: 3px; }
+      .side-panel-col .zone.synth { min-height: 0; }
+
+      .field-stack {
+        min-height: 0;
+        gap: 3px;
+        grid-template-rows: repeat(2, minmax(0, 1fr)) 2px repeat(2, minmax(0, 1fr));
+      }
+
+      .field-stack .zone {
+        min-height: 0;
+        padding: 14px 2px 2px;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      .field-stack .zone-title {
+        top: 2px;
+        left: 1px;
+        right: 1px;
+        font-size: 8px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .field-stack .empty { font-size: 9px; }
+      .field-divider { height: 1px; margin: 0; }
+      .sub-slots { min-height: 0; height: 68px; gap: 3px; }
+      .slot { min-height: 64px; padding: 2px; }
+
+      .field-stack .card,
+      .side-panel-col .card {
+        width: 42px;
+        height: 62px;
+        padding: 3px;
+        border-width: 1px;
+        border-radius: 4px;
+        grid-template-rows: 10px minmax(0, 1fr) 12px auto;
+      }
+
+      .field-stack .card.small,
+      .side-panel-col .card.small {
+        width: 46px;
+        height: 66px;
+        padding: 2px;
+        grid-template-rows: 9px minmax(0, 1fr) 12px auto;
+      }
+
+      .field-stack .card.small .card-name,
+      .side-panel-col .card.small .card-name {
+        font-size: 21px;
+      }
+
+      .field-stack .card .rarity,
+      .field-stack .card .type-label,
+      .side-panel-col .card .rarity,
+      .side-panel-col .card .type-label {
+        font-size: 8px;
+      }
+
+      .element-zone {
+        flex: 0 0 82px;
+        height: 82px;
+        min-height: 82px;
+        gap: 2px;
+        padding: 14px 2px 3px;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      .element-zone .zone-title {
+        top: 2px;
+        left: 1px;
+        right: 1px;
+        font-size: 8px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .element-gauge-label { font-size: 8px; margin-top: 0; }
+      .element-icons { gap: 2px; }
+      .element-icon { min-height: 28px; padding: 1px; border-width: 1px; font-size: 7px; }
+      .element-icon .element-icon-char { font-size: 11px; }
+
+      .status-panel {
+        flex: 0 0 auto;
+        min-height: 0;
+        width: 100%;
+        justify-self: stretch;
+        gap: 3px;
+        padding: 4px;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      .turn-badge { min-height: 26px; border-width: 1px; border-radius: 4px; font-size: 10px; }
+      .player-status { gap: 2px; font-size: 9px; }
+      .name-line { gap: 2px; }
+      .hpbar { height: 7px; }
+      .status-effects-row { min-height: 12px; gap: 2px; }
+      .status-badge { width: 14px; height: 14px; font-size: 9px; }
+      .status-panel .hint { display: none; }
+
+      #logPanel {
+        flex: 1 1 0;
+        min-height: 0;
+        max-height: none;
+        padding: 3px;
+        gap: 3px;
+        overflow: auto;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      #logPanel .log-entry {
+        padding: 3px;
+        border-left-width: 2px;
+        font-size: 7px;
+        line-height: 1.2;
+      }
+
+      .tap-selected {
+        outline: 3px solid var(--gold);
+        outline-offset: 1px;
+        transform: translateY(-4px);
+      }
+
+      .tap-placement-target {
+        outline: 3px solid var(--blue);
+        outline-offset: -2px;
+      }
+
+      .hand-panel {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+        gap: 2px;
+      }
+
+      .hand-panel > div:first-child,
+      .hand-panel .controls .hint { display: none; }
+
+      .hand {
+        min-height: 0;
+        padding: 2px 0;
+        gap: 3px;
+        overflow-x: auto;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .hand .card {
+        width: 58px;
+        height: 84px;
+        padding: 4px;
+        border-width: 1px;
+        border-radius: 5px;
+        grid-template-rows: 13px minmax(0, 1fr) 16px auto;
+      }
+
+      .hand .card .card-name { font-size: 30px; border-width: 1px; }
+      .hand .card .card-name.multi-char { font-size: 17px; }
+      .hand .card .rarity,
+      .hand .card .type-label { font-size: 10px; }
+      .hand .card .beacon-icon { width: 12px; height: 12px; font-size: 8px; }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+        padding: 3px;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      .controls button {
+        min-height: 30px;
+        padding: 0 8px;
+        font-size: 11px;
+      }
+
+      .hand .card,
+      #playerMainDrop,
+      #playerSubDrop,
+      #playerSynthMains,
+      #playerSynthMaterial,
+      #playerGrave {
+        touch-action: manipulation;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2784,6 +3081,7 @@
     <aside class="side-right">
       <section class="zone grave" id="aiGrave"><div class="zone-title">相手墓地</div><div class="pile-count"></div></section>
       <section class="zone deck" id="playerDeck"><div class="zone-title">自分山札</div><div class="pile-count"></div></section>
+      <div id="logPanelSlot"></div>
       <section class="log-panel" id="logPanel"></section>
     </aside>
 
@@ -2917,5 +3215,20 @@
   <script src="js/card-effects.js"></script>
   <script src="js/battle-flow.js"></script>
   <script src="js/lobby.js"></script>
+  <script>
+    const battleLog = document.getElementById("logPanel");
+    const desktopLogSlot = document.getElementById("logPanelSlot");
+    const mobileLogParent = document.querySelector(".element-panel-col");
+    const mobileBattleLayout = window.matchMedia("(max-width: 760px)");
+    function placeBattleLog() {
+      const target = mobileBattleLayout.matches ? mobileLogParent : desktopLogSlot;
+      if (battleLog.parentElement !== target) target.appendChild(battleLog);
+      document.querySelectorAll("#playerHand .card").forEach(card => {
+        card.draggable = !mobileBattleLayout.matches;
+      });
+    }
+    mobileBattleLayout.addEventListener("change", placeBattleLog);
+    placeBattleLog();
+  </script>
 </body>
 </html>

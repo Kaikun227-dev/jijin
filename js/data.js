@@ -1232,6 +1232,7 @@
     // 狐(repeatLastMain)の連鎖が無限ループしないようにするための再帰深度カウンタ
     let repeatMainChainDepth = 0;
     let draggedCardId = null;
+    let selectedPlacementCardId = null;
     let pendingDrawOwner = null;
     let pendingCards = [];
     let replacingSubCardId = null;
@@ -1717,4 +1718,3 @@
     function opponentOf(owner) {
       return owner === game.player ? game.ai : game.player;
     }
-

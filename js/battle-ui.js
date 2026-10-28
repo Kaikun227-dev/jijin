@@ -252,7 +252,12 @@
       const nameEl = el.querySelector(".card-name");
       requestAnimationFrame(() => fitCardNameFont(nameEl));
       if (options.draggable) {
-        el.draggable = true;
+        el.draggable = !window.matchMedia("(max-width: 760px)").matches;
+        el.addEventListener("click", event => {
+          if (!window.matchMedia("(max-width: 760px)").matches || game.turn !== "player" || game.phase !== "main" || game.gameOver) return;
+          event.stopPropagation();
+          selectPlacementCard(card.instanceId);
+        });
         el.addEventListener("dragstart", event => {
           if (game.turn !== "player" || game.phase !== "main" || game.gameOver) {
             event.preventDefault();
@@ -445,6 +450,9 @@
     }
 
     function setupDrop(zone, type) {
+      zone.addEventListener("click", event => {
+        handleMobilePlacement(event, card => card.type === type, cardId => playPlayerCard(cardId, type));
+      }, true);
       zone.addEventListener("dragover", event => {
         const card = game.player.hand.find(item => item.instanceId === draggedCardId);
         if (!card || card.type !== type || game.turn !== "player" || game.phase !== "main") return;
@@ -462,6 +470,15 @@
     }
 
     function setupSynthDrop(zone, kind) {
+      zone.addEventListener("click", event => {
+        handleMobilePlacement(event, card => {
+          if (kind === "main") return card.type === "main" && !card.synthSources;
+          return card.type === "sub";
+        }, cardId => {
+          if (kind === "main") placeSynthMainFromHand(cardId);
+          else placeSynthMaterialFromHand(cardId);
+        });
+      }, true);
       zone.addEventListener("dragover", event => {
         const card = game.player.hand.find(item => item.instanceId === draggedCardId);
         if (!card || game.turn !== "player" || game.phase !== "main") return;
@@ -486,10 +503,51 @@
       els.playerSynthMains.classList.remove("drop-ok");
       els.playerSynthMaterial.classList.remove("drop-ok");
       document.getElementById("playerGrave").classList.remove("drop-ok");
+      document.querySelectorAll(".tap-placement-target").forEach(target => target.classList.remove("tap-placement-target"));
+    }
+
+    function clearSelectedPlacementCard() {
+      selectedPlacementCardId = null;
+      document.querySelectorAll(".tap-selected").forEach(card => card.classList.remove("tap-selected"));
+      document.querySelectorAll(".tap-placement-target").forEach(target => target.classList.remove("tap-placement-target"));
+    }
+
+    function selectPlacementCard(cardId) {
+      if (selectedPlacementCardId === cardId) {
+        clearSelectedPlacementCard();
+        return;
+      }
+      clearSelectedPlacementCard();
+      const card = game.player.hand.find(item => item.instanceId === cardId);
+      if (!card) return;
+      selectedPlacementCardId = cardId;
+      els.playerHand.querySelector(`[data-card-id="${cardId}"]`)?.classList.add("tap-selected");
+
+      const targets = card.type === "main"
+        ? [els.playerMainDrop, els.playerSynthMains]
+        : [els.playerSubDrop, els.playerSynthMaterial];
+      targets.forEach(target => target.classList.add("tap-placement-target"));
+      if (!card.noDirectDiscard && game.discardedThisTurnCount < getDiscardLimit(game.player)) {
+        document.getElementById("playerGrave").classList.add("tap-placement-target");
+      }
+    }
+
+    function handleMobilePlacement(event, accepts, placeCard) {
+      if (!window.matchMedia("(max-width: 760px)").matches || !selectedPlacementCardId) return;
+      const card = game.player.hand.find(item => item.instanceId === selectedPlacementCardId);
+      if (!card || !accepts(card)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const cardId = selectedPlacementCardId;
+      clearSelectedPlacementCard();
+      placeCard(cardId);
     }
 
     function setupGraveDrop() {
       const graveZone = document.getElementById("playerGrave");
+      graveZone.addEventListener("click", event => {
+        handleMobilePlacement(event, card => !card.noDirectDiscard, discardPlayerCardFromHand);
+      }, true);
       graveZone.addEventListener("dragover", event => {
         if (!draggedCardId) return;
         if (game.turn !== "player" || game.phase !== "main" || game.gameOver) return;
@@ -503,27 +561,31 @@
       graveZone.addEventListener("drop", event => {
         event.preventDefault();
         graveZone.classList.remove("drop-ok");
-        if (game.turn !== "player" || game.phase !== "main" || game.gameOver) return;
-        const limit = getDiscardLimit(game.player);
-        if (game.discardedThisTurnCount >= limit) {
-          log(`このターンはすでに捨て札の上限（${limit}枚）に達しています。`, "");
-          return;
-        }
         const cardId = event.dataTransfer.getData("text/plain");
-        const card = game.player.hand.find(c => c.instanceId === cardId);
-        if (!card) return;
-        if (card.noDirectDiscard) {
-          log(`『${card.name}』は直接墓地に送ることができない。`, "");
-          return;
-        }
-        const removed = removeFromHand(game.player, cardId);
-        if (!removed) return;
-        game.player.grave.push(removed);
-        game.discardedThisTurnCount += 1;
-        log(`自分は『${removed.name}』を墓地に捨てた。（今ターンの捨て札：${game.discardedThisTurnCount}/${limit}）`);
-        triggerDiscardTrigger(game.player);
-        render();
+        discardPlayerCardFromHand(cardId);
       });
+    }
+
+    function discardPlayerCardFromHand(cardId) {
+      if (game.turn !== "player" || game.phase !== "main" || game.gameOver) return;
+      const limit = getDiscardLimit(game.player);
+      if (game.discardedThisTurnCount >= limit) {
+        log(`このターンはすでに捨て札の上限（${limit}枚）に達しています。`, "");
+        return;
+      }
+      const card = game.player.hand.find(item => item.instanceId === cardId);
+      if (!card) return;
+      if (card.noDirectDiscard) {
+        log(`『${card.name}』は直接墓地に送ることができない。`, "");
+        return;
+      }
+      const removed = removeFromHand(game.player, cardId);
+      if (!removed) return;
+      game.player.grave.push(removed);
+      game.discardedThisTurnCount += 1;
+      log(`自分は『${removed.name}』を墓地に捨てた。（今ターンの捨て札：${game.discardedThisTurnCount}/${limit}）`);
+      triggerDiscardTrigger(game.player);
+      render();
     }
 
     // 狂(discardTrigger)：直接墓地に捨てた時に発動
